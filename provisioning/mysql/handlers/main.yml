@@ -1,0 +1,25 @@
+---
+# handlers file for mysql
+- name: Percona-release
+  ansible.builtin.shell: "{{ item }}"
+  with_items:
+    - percona-release setup -y ps80
+
+- name: Restart mysqld
+  ansible.builtin.service:
+    name: mysqld
+    state: restarted
+
+- name: Change password
+  ansible.builtin.shell: "cat /var/log/mysqld.log | grep 'root@localhost:' | grep -o '[^[:space:]]*[[:space:]]*$'"
+  register: mysql_password
+  notify: Root password
+
+- name: Root password
+  ansible.builtin.shell: "mysql --connect-expired-password -uroot -p'{{ mysql_password.stdout }}' -e \"ALTER USER USER() IDENTIFIED BY '{{ mysql_root_password }}';\""
+
+- name: Restore sql dump
+  ansible.builtin.shell: "{{ item }}"
+  with_items:
+    - mysql -uroot -p'Otus2023!' -e "CREATE DATABASE bet;"
+    - mysql -uroot -p'Otus2023!' -D bet < /root/bet.dmp

@@ -1,0 +1,50 @@
+---
+- name: Add GPG key Percona repository
+  ansible.builtin.rpm_key:
+    state: present
+    key: https://www.percona.com/downloads/RPM-GPG-KEY-percona
+
+- name: Install Percona repository
+  ansible.builtin.dnf:
+    name: 'https://repo.percona.com/yum/percona-release-latest.noarch.rpm'
+    state: present
+  notify: Percona-release
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+#- name: Install PyMySQL
+#  ansible.builtin.dnf:
+#    name: python3-PyMySQL
+#    state: present
+
+- name: Install Percona repository
+  ansible.builtin.dnf:
+    name:
+      - percona-server-server
+      - percona-toolkit
+    state: present
+  notify: Change password
+
+- name: Configure mysqld
+  ansible.builtin.template:
+    src: mysqld.cnf.j2
+    dest: /etc/my.cnf.d/mysqld.cnf
+    owner: root
+    group: mysql
+    mode: '0640'
+  notify: Restart mysqld
+
+- name: Edit main config mysql
+  ansible.builtin.lineinfile:
+    path: /etc/my.cnf
+    line: '!includedir /etc/my.cnf.d'
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Copy base sql dump
+  ansible.builtin.copy:
+    src: bet.dmp
+    dest: /root/bet.dmp
+  notify: Restore sql dump

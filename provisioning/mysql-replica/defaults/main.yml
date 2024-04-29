@@ -1,0 +1,4 @@
+---
+# defaults file for mysql-replica
+mysql_root_password: 'Otus2023!'
+mysql_repl_password: '!OtusLinux2023'

@@ -1,0 +1,26 @@
+[
+  {
+    "name": "source",
+    "cpus": 2,
+    "gui": false,
+    "box": "centos/8",
+    "private_network": 
+    [
+      { "ip": "192.168.56.11", "adapter": 2, "netmask": "255.255.255.0" }
+    ],
+    "memory": 1024,
+    "no_share": true
+  },
+  {
+    "name": "replica",
+    "cpus": 2,
+    "gui": false,
+    "box": "centos/8",
+    "private_network":
+    [
+      { "ip": "192.168.56.12", "adapter": 2, "netmask": "255.255.255.0" }
+    ],
+    "memory": 1024,
+    "no_share": true
+  }
+]

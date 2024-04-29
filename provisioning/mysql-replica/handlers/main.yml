@@ -1,0 +1,12 @@
+---
+# handlers file for mysql-replica
+- name: Restart mysqld
+  ansible.builtin.service:
+    name: mysqld
+    state: restarted
+
+- name: Change replication source and start replica
+  ansible.builtin.shell: "{{ item }}"
+  with_items:
+    - mysql -uroot -p'{{ mysql_root_password }}' -e 'CHANGE REPLICATION SOURCE TO SOURCE_HOST = "192.168.56.11", SOURCE_PORT = 3306,SOURCE_USER = "repl", SOURCE_PASSWORD = "{{ mysql_repl_password }}", SOURCE_AUTO_POSITION = 1;'
+    - mysql -uroot -p'{{ mysql_root_password }}' -e 'START REPLICA;'

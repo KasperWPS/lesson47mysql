@@ -1,0 +1,56 @@
+---
+# tasks file for mysql-replica
+
+- name: Install PyMySQL
+  ansible.builtin.dnf:
+    name: python3-PyMySQL
+    state: present
+  when: ansible_hostname == 'source'
+
+- name: Create mysql user repl
+  community.mysql.mysql_user:
+    name: repl
+    check_implicit_admin: true
+    password: "{{ mysql_repl_password }}"
+    priv: '*.*:REPLICATION SLAVE'
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    login_host: 'localhost'
+    host: '%'
+    login_unix_socket: /var/lib/mysql/mysql.sock
+    state: present
+  when: ansible_hostname == 'source'
+
+- name: Dump bases on source
+  ansible.builtin.shell: "mysqldump --all-databases --triggers --routines --master-data --ignore-table=bet.events_on_demand --ignore-table=bet.v_same_event -uroot -p'{{ mysql_root_password }}' > /root/master.sql"
+  when: ansible_hostname == 'source'
+
+- name: Copy dump to host
+  ansible.builtin.fetch:
+    src: /root/master.sql
+    dest: /tmp/master.sql
+    flat: true
+  when:  ansible_hostname == 'source'
+
+- name: Copy dump to replica
+  ansible.builtin.copy:
+    src: /tmp/master.sql
+    dest: /root/master.sql
+  when: ansible_hostname == 'replica'
+
+- name: Copy mysqld-02.cfg on replica
+  ansible.builtin.template:
+    src: mysqld-02.cnf.j2
+    dest: /etc/my.cnf.d/mysqld-02.cnf
+    owner: root
+    group: mysql
+    mode: '0640'
+  when: ansible_hostname == 'replica'
+  notify:
+    - Restart mysqld
+    - Change replication source and start replica
+
+- name: Load dump master.sql
+  ansible.builtin.shell: "mysql -uroot -p'{{ mysql_root_password }}' -e \"SOURCE /root/master.sql\""
+  when: ansible_hostname == 'replica'
+
